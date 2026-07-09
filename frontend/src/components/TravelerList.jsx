@@ -1,53 +1,84 @@
-function TravelerList({ originGroups, updateOriginGroup, removeOriginGroup, addOriginGroup }) {
+function TravelerList({
+  originGroups,
+  updateOriginGroup,
+  removeOriginGroup,
+  addOriginGroup,
+}) {
   return (
-    <div className="mb-4">
-      <label className="block font-medium mb-2">Origin Groups</label>
+    <div className="mt-5">
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        Origin Groups
+      </label>
 
-      {originGroups.map((group, index) => (
-        <div key={index} className="flex gap-2 mb-2 items-center">
-          <input
-            type="text"
-            placeholder="Origin city"
-            value={group.origin}
-            onChange={(e) => updateOriginGroup(index, "origin", e.target.value)}
-            className="border rounded px-2 py-1 flex-1"
-          />
-          <input
-            type="number"
-            placeholder="Group size"
-            value={group.group_size}
-            min={1}
-            onChange={(e) =>
-              updateOriginGroup(index, "group_size", parseInt(e.target.value) || 1)
-            }
-            className="border rounded px-2 py-1 w-24"
-          />
-          <input
-            type="number"
-            placeholder="Budget"
-            value={group.budget}
-            min={0}
-            onChange={(e) =>
-              updateOriginGroup(index, "budget", parseFloat(e.target.value) || 0)
-            }
-            className="border rounded px-2 py-1 w-28"
-          />
-          <button
-            onClick={() => removeOriginGroup(index)}
-            className="text-red-600 px-2"
-            type="button"
+      <div className="space-y-2">
+        {originGroups.map((group, index) => (
+          <div
+            key={index}
+            className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-lg p-2"
           >
-            ✕
-          </button>
-        </div>
-      ))}
+            <input
+              type="text"
+              placeholder="Origin City"
+              value={group.origin}
+              onChange={(e) =>
+                updateOriginGroup(index, "origin", e.target.value)
+              }
+              className="flex-1 min-w-0 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="number"
+              placeholder="# People"
+              value={group.group_size === 0 ? "" : group.group_size}
+              min={1}
+              onChange={(e) => {
+                const val = e.target.value;
+                updateOriginGroup(
+                  index,
+                  "group_size",
+                  val === "" ? "" : parseInt(val),
+                );
+              }}
+              className="w-24 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="relative w-32">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                $
+              </span>
+              <input
+                type="number"
+                placeholder="Total Budget for Group"
+                value={group.budget === 0 ? "" : group.budget}
+                min={0}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateOriginGroup(
+                    index,
+                    "budget",
+                    val === "" ? "" : parseFloat(val),
+                  );
+                }}
+                className="w-full border border-slate-300 rounded-md pl-5 pr-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={() => removeOriginGroup(index)}
+              type="button"
+              disabled={originGroups.length === 1}
+              className="shrink-0 h-8 w-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 rounded-md transition-colors"
+              aria-label="Remove origin group"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
 
       <button
         onClick={addOriginGroup}
         type="button"
-        className="text-blue-600 mt-1 text-sm"
+        className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
       >
-        + Add origin group
+        <span className="text-base leading-none">+</span> Add origin group
       </button>
     </div>
   );
