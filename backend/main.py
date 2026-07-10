@@ -1,33 +1,44 @@
-# File will control all FastAPI routes from fastapi import FastAPI
+# File will control all FastAPI routes
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from models import AffordabilityRequest, AffordabilityResponse, AirportSearchResponse, AirportOption
-from services import check_origin_affordability
+from models import AirportSearchResponse, AirportOption, TripRequest
+from services import compute_return_date, check_origin
 from getdata import search_airports
 
 app = FastAPI()
 
-# Allow the React dev server to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"],
+    allow_origins=["http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Live Endpoints 
 @app.get("/search-airports", response_model=AirportSearchResponse)
 def search_airports_endpoint(query: str):
     results = search_airports(query)
     options = [AirportOption(**r) for r in results]
     return AirportSearchResponse(options=options)
 
-# Mock Endpoints 
-@app.post("/check-affordability", response_model=AffordabilityResponse)
-def check_affordability(request: AffordabilityRequest):
-    results = [
-        check_origin_affordability(request.destination, group)
-        for group in request.origin_groups
+
+@app.post("/check-trip", response_model=TripRequest)
+def check_trip(trip: TripRequest):
+    return_date = compute_return_date(trip.date, trip.duration_days)
+
+    origin_results = [
+        check_origin(
+            trip.destination_sky_id,
+            trip.destination_entity_id,
+            trip.date,
+            return_date,
+            origin,
+        )
+        for origin in trip.origins
     ]
-    return AffordabilityResponse(destination=request.destination, results=results)
+
+    return TripRequest(
+        trip_name=trip.trip_name,
+        destination=trip.destination_sky_id,  # or store/pass a real destination label if you have one
+        origin_results=origin_results,
+    )
