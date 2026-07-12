@@ -1,7 +1,7 @@
 import CityAutoComplete from "./CityAutoComplete";
 
 function TripBasicsForm({ trip, updateTrip, onNext }) {
-  const canProceed = trip.trip_name.trim() !== "";
+  const canProceed = trip.trip_name.trim() !== "" && trip.date !== "";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -10,7 +10,7 @@ function TripBasicsForm({ trip, updateTrip, onNext }) {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
-            Trip Name
+            Trip Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -53,7 +53,7 @@ function TripBasicsForm({ trip, updateTrip, onNext }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Target Date
+              Target Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"

@@ -36,16 +36,6 @@ class OriginEntry(BaseModel):
     bulk_budget: float | None = None
     currency: str = "USD"
 
-class TripRequest(BaseModel):
-    trip_name: str
-    destination_label: str
-    destination_sky_id: str
-    destination_entity_id: str
-    date: str
-    duration_days: int | None = None
-    origins: List[OriginEntry]
-
-
 # ---- Result models ----
 
 class TravelerResult(BaseModel):
@@ -67,7 +57,31 @@ class OriginResult(BaseModel):
     affordable: bool | None = None
     shortfall: float | None = None
 
+class DestinationCheck(BaseModel):
+    origin: str
+    fare: float | None = None
+    error: str | None = None
+    traveler_results: List[TravelerResult] | None = None
+    compatible_count: int | None = None
+    total: int | None = None
+    affordable: bool | None = None
+    shortfall: float | None = None
+
+class DestinationResult(BaseModel):
+    destination_label: str
+    origin_checks: List[DestinationCheck]
+
 class TripResult(BaseModel):
     trip_name: str
-    destination: str
-    origin_results: List[OriginResult]
+    destination: str | None = None
+    origin_results: List[OriginResult] | None = None
+    anywhere_results: List[DestinationResult] | None = None
+
+class TripRequest(BaseModel):
+    trip_name: str
+    destination_label: str | None = None
+    destination_sky_id: str | None = None
+    destination_entity_id: str | None = None
+    date: str
+    duration_days: int | None = None
+    origins: List[OriginEntry]

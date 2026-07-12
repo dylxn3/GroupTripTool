@@ -94,12 +94,44 @@ MOCK_AIRPORTS = {
 }
 
 MOCK_FARES = {
+    # Toronto/YYZ/YTOA as origin
     ("YYZ", "CUN"): 450,
     ("YTOA", "CUN"): 450,
+    ("YYZ", "TYOA"): 1100,
+    ("YTOA", "TYOA"): 1100,
+    ("YYZ", "ROMA"): 850,
+    ("YTOA", "ROMA"): 850,
+
+    # Tokyo/TYOA as origin
+    ("TYOA", "CUN"): 1150,
+    ("TYOA", "ROMA"): 950,
     ("NRT", "CUN"): 1400,
+    ("NRT", "ROMA"): 1050,
+
+    # Manila as origin
+    ("MNL", "TYOA"): 300,
     ("MNL", "CUN"): 1200,
+    ("MNL", "ROMA"): 1350,
+
+    # Rome/FCO/ROMA as origin
+    ("FCO", "TYOA"): 1300,
     ("FCO", "CUN"): 900,
+    ("ROMA", "TYOA"): 1300,
+    ("ROMA", "CUN"): 900,
 }
+
+def _mock_search_flights(origin_sky_id, origin_entity_id, destination_sky_id, destination_entity_id, date, return_date=None) -> float | None:
+    base_fare = MOCK_FARES.get((origin_sky_id, destination_sky_id))
+
+    if base_fare is None:
+        # Unknown route — simulate "no flight found" instead of always defaulting to $800
+        return None
+
+    # Simulate round-trip pricing: roughly 1.7x one-way, not exactly 2x
+    if return_date:
+        return round(base_fare * 1.7, 2)
+
+    return base_fare
 
 def _mock_search_airports(query: str) -> list[dict]:
     key = query.strip().lower()
@@ -116,10 +148,6 @@ def _mock_search_airports(query: str) -> list[dict]:
             matches.extend(entry["options"])
 
     return matches
-
-def _mock_search_flights(origin_sky_id, origin_entity_id, destination_sky_id, destination_entity_id, date, return_date=None) -> float | None:
-    return MOCK_FARES.get((origin_sky_id, destination_sky_id), 800)
-
 
 # ============================================================
 # REAL DATA (used while USE_MOCK_DATA = False)

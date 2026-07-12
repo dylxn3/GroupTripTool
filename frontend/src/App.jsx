@@ -51,7 +51,6 @@ function App() {
   const canSubmit =
     !loading &&
     origins.length > 0 &&
-    trip.destination_option &&
     trip.date &&
     origins.every((o) => {
       if (o.headcount === 0) return false;
@@ -68,7 +67,7 @@ function App() {
 
     const payload = {
       trip_name: trip.trip_name,
-      destination_label: trip.destination_option?.label || "",
+      destination_label: trip.destination_option?.label || null,
       destination_sky_id: trip.destination_option?.sky_id || null,
       destination_entity_id: trip.destination_option?.entity_id || null,
       duration_days: trip.duration_days,
@@ -97,7 +96,6 @@ function App() {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
