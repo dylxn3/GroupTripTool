@@ -1,7 +1,7 @@
 # File will control all FastAPI routes
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from models import AirportSearchResponse, AirportOption, TripRequest
+from models import AirportSearchResponse, AirportOption, TripRequest, TripResult
 from services import compute_return_date, check_origin
 from getdata import search_airports
 
@@ -22,7 +22,7 @@ def search_airports_endpoint(query: str):
     return AirportSearchResponse(options=options)
 
 
-@app.post("/check-trip", response_model=TripRequest)
+@app.post("/check-trip", response_model=TripResult)
 def check_trip(trip: TripRequest):
     return_date = compute_return_date(trip.date, trip.duration_days)
 
@@ -37,8 +37,8 @@ def check_trip(trip: TripRequest):
         for origin in trip.origins
     ]
 
-    return TripRequest(
+    return TripResult(
         trip_name=trip.trip_name,
-        destination=trip.destination_sky_id,  # or store/pass a real destination label if you have one
+        destination=trip.destination_label,
         origin_results=origin_results,
     )

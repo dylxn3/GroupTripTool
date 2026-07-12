@@ -1,29 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Literal
 
-class OriginGroup(BaseModel):
-    origin_label: str       # display name, e.g. "Toronto Pearson International (YYZ)"
-    sky_id: str              # e.g. "YYZ"
-    entity_id: str            # e.g. "95673353"
-    group_size: int
-    budget: float
-    currency: str = "USD"
 
-class AffordabilityRequest(BaseModel):
-    destination: str
-    origin_groups: List[OriginGroup]
-
-class OriginResult(BaseModel):
-    origin: str
-    per_person_budget: float
-    fare: float | None = None
-    affordable: bool | None = None
-    shortfall: float | None = None
-    error: str | None = None
-
-class AffordabilityResponse(BaseModel):
-    destination: str
-    results: List[OriginResult]
+# ---- Airport search ----
 
 class AirportOption(BaseModel):
     label: str
@@ -34,21 +13,24 @@ class AirportOption(BaseModel):
 class AirportSearchResponse(BaseModel):
     options: List[AirportOption]
 
+
+# ---- Trip / traveler input models ----
+
 class NamedTraveler(BaseModel):
     name: str
     budget: float
-    airport_sky_id: str | None = None      # None = use city-wide default
+    airport_sky_id: str | None = None
     airport_entity_id: str | None = None
-    airport_label: str | None = None        # e.g. "Toronto Pearson International (YYZ)"
+    airport_label: str | None = None
 
 class OriginEntry(BaseModel):
-    origin_city_label: str      # e.g. "Toronto"
-    city_sky_id: str             # e.g. "YTOA"
+    origin_city_label: str
+    city_sky_id: str
     city_entity_id: str
     headcount: int
     entry_type: Literal["individual", "bulk"]
     travelers: List[NamedTraveler] = []
-    bulk_airport_sky_id: str | None = None   # shared airport choice for bulk groups
+    bulk_airport_sky_id: str | None = None
     bulk_airport_entity_id: str | None = None
     bulk_airport_label: str | None = None
     bulk_budget: float | None = None
@@ -56,8 +38,36 @@ class OriginEntry(BaseModel):
 
 class TripRequest(BaseModel):
     trip_name: str
+    destination_label: str
     destination_sky_id: str
     destination_entity_id: str
-    date: str                        # departure date
-    duration_days: int | None = None  # used to compute return date
+    date: str
+    duration_days: int | None = None
     origins: List[OriginEntry]
+
+
+# ---- Result models ----
+
+class TravelerResult(BaseModel):
+    name: str
+    fare: float | None = None
+    affordable: bool | None = None
+    shortfall: float | None = None
+
+class OriginResult(BaseModel):
+    origin: str
+    fare: float | None = None
+    error: str | None = None
+    # individual-entry results
+    traveler_results: List[TravelerResult] | None = None
+    compatible_count: int | None = None
+    total: int | None = None
+    # bulk-entry results
+    headcount: int | None = None
+    affordable: bool | None = None
+    shortfall: float | None = None
+
+class TripResult(BaseModel):
+    trip_name: str
+    destination: str
+    origin_results: List[OriginResult]

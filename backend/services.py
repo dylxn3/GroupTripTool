@@ -1,7 +1,7 @@
-from models import OriginGroup, OriginResult
-from mock_data import get_mock_fare
 from datetime import datetime, timedelta
 from getdata import search_flights
+from models import OriginEntry, OriginResult, TravelerResult
+
 
 def compute_return_date(departure_date: str, duration_days: int | None) -> str | None:
     if not duration_days:
@@ -11,44 +11,56 @@ def compute_return_date(departure_date: str, duration_days: int | None) -> str |
     return return_date.strftime("%Y-%m-%d")
 
 
-def check_origin(destination_sky_id, destination_entity_id, date, return_date, origin):
+def check_origin(
+    destination_sky_id: str,
+    destination_entity_id: str,
+    date: str,
+    return_date: str | None,
+    origin: OriginEntry,
+) -> OriginResult:
     fare = search_flights(
         origin.city_sky_id,
         origin.city_entity_id,
         destination_sky_id,
         destination_entity_id,
         date,
-        return_date,   
+        return_date,
     )
-    
-def check_origin_affordability(destination: str, group: OriginGroup) -> OriginResult:
-    per_person_budget = group.budget / group.group_size
-    fare = get_mock_fare(group.origin, destination)
 
     if fare is None:
         return OriginResult(
-            origin=group.origin,
-            per_person_budget=per_person_budget,
-            fare=None,
-            affordable=None,
-            shortfall=None,
-            error="No route found for this origin/destination",
+            origin=origin.origin_city_label,
+            error="No flight found for this route",
         )
 
-    if fare <= per_person_budget:
+    if origin.entry_type == "individual":
+        traveler_results = []
+        for t in origin.travelers:
+            affordable = fare <= t.budget
+            traveler_results.append(
+                TravelerResult(
+                    name=t.name,
+                    fare=fare,
+                    affordable=affordable,
+                    shortfall=None if affordable else round(fare - t.budget, 2),
+                )
+            )
+        compatible_count = sum(1 for r in traveler_results if r.affordable)
         return OriginResult(
-            origin=group.origin,
-            per_person_budget=per_person_budget,
+            origin=origin.origin_city_label,
             fare=fare,
-            affordable=True,
-            shortfall=None,
+            traveler_results=traveler_results,
+            compatible_count=compatible_count,
+            total=len(traveler_results),
         )
 
-    shortfall = fare - per_person_budget
+    # bulk entry
+    affordable = fare <= (origin.bulk_budget or 0)
+    shortfall = None if affordable else round(fare - origin.bulk_budget, 2)
     return OriginResult(
-        origin=group.origin,
-        per_person_budget=per_person_budget,
+        origin=origin.origin_city_label,
         fare=fare,
-        affordable=False,
-        shortfall=round(shortfall, 2),
+        headcount=origin.headcount,
+        affordable=affordable,
+        shortfall=shortfall,
     )
