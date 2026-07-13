@@ -87,61 +87,85 @@ MOCK_AIRPORTS = {
     "cancun": {
         "country": "mexico",
         "options": [
-            {"label": "Cancun (Any)", "sky_id": "CUNA", "entity_id": "27538100", "entity_type": "CITY"},
-            {"label": "Cancun International (CUN)", "sky_id": "CUN", "entity_id": "95673700", "entity_type": "AIRPORT"},
+            {"label": "Cancun (Any)", "sky_id": "CUNAA", "entity_id": "27538100", "entity_type": "CITY"},
+            {"label": "Cancun International (CUNA)", "sky_id": "CUNA", "entity_id": "95673700", "entity_type": "AIRPORT"},
         ],
     },
 }
 
 MOCK_FARES = {
-    # Toronto/YYZ/YTOA as origin
-    ("YYZ", "CUN"): 450,
-    ("YTOA", "CUN"): 450,
-    ("YYZ", "TYOA"): 1100,
+    # Toronto Pearson (YYZ) as origin
+    ("YYZ", "CUNA"): 450,     # Cancunfro
+    ("YYZ", "TYOA"): 1100,   # Tokyo
+    ("YYZ", "ROMA"): 850,    # Rome
+
+    # Narita (NRT) as origin
+    ("NRT", "CUNA"): 700,    # Cancun
+    ("NRT", "ROMA"): 1050,   # Rome
+
+    # keep existing city-wide entries too, so "Any" origin selections still work
+    ("YTOA", "CUNA"): 450,
     ("YTOA", "TYOA"): 1100,
-    ("YYZ", "ROMA"): 850,
     ("YTOA", "ROMA"): 850,
-
-    # Tokyo/TYOA as origin
-    ("TYOA", "CUN"): 1150,
+    ("TYOA", "CUNA"): 1150,
     ("TYOA", "ROMA"): 950,
-    ("NRT", "CUN"): 1400,
-    ("NRT", "ROMA"): 1050,
-
-    # Manila as origin
     ("MNL", "TYOA"): 300,
-    ("MNL", "CUN"): 1200,
+    ("MNL", "CUNA"): 1200,
     ("MNL", "ROMA"): 1350,
-
-    # Rome/FCO/ROMA as origin
     ("FCO", "TYOA"): 1300,
-    ("FCO", "CUN"): 900,
+    ("FCO", "CUNA"): 900,
     ("ROMA", "TYOA"): 1300,
-    ("ROMA", "CUN"): 900,
+    ("ROMA", "CUNA"): 900,
 }
 
-def _mock_search_flights(origin_sky_id, origin_entity_id, destination_sky_id, destination_entity_id, date, return_date=None) -> float | None:
+def _mock_search_flights_raw_response(origin_sky_id, destination_sky_id, date, return_date=None) -> dict:
+    """
+    Simulates the real searchFlights response shape.
+    NOTE: response structure below is a best-guess based on common Skyscanner
+    itinerary conventions — unconfirmed until tested live. Only the fields
+    _real_search_flights actually reads (price.raw) need to match reality;
+    everything else here is just for realism/future use.
+    """
     base_fare = MOCK_FARES.get((origin_sky_id, destination_sky_id))
 
     if base_fare is None:
-        # Unknown route — simulate "no flight found" instead of always defaulting to $800
+        return {"data": {"itineraries": []}}
+
+    fare = round(base_fare * 1.7, 2) if return_date else base_fare
+
+    return {
+        "data": {
+            "itineraries": [
+                {
+                    "id": f"{origin_sky_id}-{destination_sky_id}-{date}",
+                    "price": {"raw": fare, "formatted": f"${fare:.2f}"},
+                    "legs": [
+                        {
+                            "origin": {"skyId": origin_sky_id},
+                            "destination": {"skyId": destination_sky_id},
+                            "departure": date,
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+
+def _mock_search_flights(origin_sky_id, origin_entity_id, destination_sky_id, destination_entity_id, date, return_date=None) -> float | None:
+    """Public-facing mock — parses the simulated raw response the same way _real_search_flights will."""
+    raw = _mock_search_flights_raw_response(origin_sky_id, destination_sky_id, date, return_date)
+    try:
+        return raw["data"]["itineraries"][0]["price"]["raw"]
+    except (KeyError, IndexError, TypeError):
         return None
-
-    # Simulate round-trip pricing: roughly 1.7x one-way, not exactly 2x
-    if return_date:
-        return round(base_fare * 1.7, 2)
-
-    return base_fare
 
 def _mock_search_airports(query: str) -> list[dict]:
     key = query.strip().lower()
 
-    # 1. Exact/partial city name match (existing behavior)
     for city_key, entry in MOCK_AIRPORTS.items():
         if city_key.startswith(key) or key in city_key:
             return entry["options"]
 
-    # 2. Country-level match — return every city in that country
     matches = []
     for city_key, entry in MOCK_AIRPORTS.items():
         if entry["country"].startswith(key) or key in entry["country"]:
@@ -149,12 +173,12 @@ def _mock_search_airports(query: str) -> list[dict]:
 
     return matches
 
+
 # ============================================================
 # REAL DATA (used while USE_MOCK_DATA = False)
 # ============================================================
 
 def _real_search_airports(query: str) -> list[dict]:
-    """Look up all matching locations (city + every airport) for a search query."""
     url = f"https://{RAPIDAPI_HOST}/api/v1/flights/searchAirport"
     params = {"query": query, "locale": "en-US"}
 
@@ -193,7 +217,6 @@ def _real_search_flights(origin_sky_id, origin_entity_id, destination_sky_id, de
     response.raise_for_status()
     data = response.json()
 
-    # TODO: confirm this parsing matches the real response shape once tested live
     try:
         return data["data"]["itineraries"][0]["price"]["raw"]
     except (KeyError, IndexError, TypeError):

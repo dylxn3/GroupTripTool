@@ -71,11 +71,35 @@ class DestinationResult(BaseModel):
     destination_label: str
     origin_checks: List[DestinationCheck]
 
+class BudgetShortfall(BaseModel):
+    origin: str
+    cheapest_destination: str
+    cheapest_fare: float
+    current_budget: float
+    shortfall: float
+
+class OriginFareBreakdown(BaseModel):
+    origin: str
+    fare: float
+    budget: float
+    affordable: bool
+    shortfall: float | None = None
+
+class DestinationSuggestion(BaseModel):
+    destination_label: str
+    anchor_origin: str | None = None   # which origin this was "their cheapest pick" for — None for the balanced suggestion
+    origin_fares: List[OriginFareBreakdown]
+    fare_spread: float | None = None    # only set for the balanced suggestion
+
+
 class TripResult(BaseModel):
     trip_name: str
     destination: str | None = None
     origin_results: List[OriginResult] | None = None
     anywhere_results: List[DestinationResult] | None = None
+    suggested_alternatives: List[DestinationResult] | None = None
+    cheapest_per_origin: List[DestinationSuggestion] | None = None
+    recommended_option: DestinationSuggestion | None = None   # was balanced_suggestion
 
 class TripRequest(BaseModel):
     trip_name: str
@@ -85,3 +109,13 @@ class TripRequest(BaseModel):
     date: str
     duration_days: int | None = None
     origins: List[OriginEntry]
+
+
+class TripResult(BaseModel):
+    trip_name: str
+    destination: str | None = None
+    origin_results: List[OriginResult] | None = None
+    anywhere_results: List[DestinationResult] | None = None
+    suggested_alternatives: List[DestinationResult] | None = None
+    cheapest_per_origin: List[DestinationSuggestion] | None = None
+    recommended_option: DestinationSuggestion | None = None
